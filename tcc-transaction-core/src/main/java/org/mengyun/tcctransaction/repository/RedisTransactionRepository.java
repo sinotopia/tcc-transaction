@@ -5,8 +5,9 @@ import org.mengyun.tcctransaction.Transaction;
 import org.mengyun.tcctransaction.repository.helper.ExpandTransactionSerializer;
 import org.mengyun.tcctransaction.repository.helper.JedisCallback;
 import org.mengyun.tcctransaction.repository.helper.RedisHelper;
-import org.mengyun.tcctransaction.serializer.JdkSerializationSerializer;
+import org.mengyun.tcctransaction.serializer.KryoPoolSerializer;
 import org.mengyun.tcctransaction.serializer.ObjectSerializer;
+import org.mengyun.tcctransaction.utils.RedisUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
@@ -30,14 +31,26 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
 
     private String keyPrefix = "TCC:";
 
+    private int fetchKeySize = RedisUtils.DEFAULT_FETCH_KEY_SIZE;
+
+    private boolean supportScan;
+
     public void setKeyPrefix(String keyPrefix) {
         this.keyPrefix = keyPrefix;
     }
 
-    private ObjectSerializer serializer = new JdkSerializationSerializer();
+    private ObjectSerializer serializer = new KryoPoolSerializer();
 
     public void setSerializer(ObjectSerializer serializer) {
         this.serializer = serializer;
+    }
+
+    public int getFetchKeySize() {
+        return fetchKeySize;
+    }
+
+    public void setFetchKeySize(int fetchKeySize) {
+        this.fetchKeySize = fetchKeySize;
     }
 
     public JedisPool getJedisPool() {
@@ -46,6 +59,7 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
 
     public void setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
+        supportScan = RedisHelper.isSupportScanCommand(jedisPool.getResource());
     }
 
     @Override
@@ -57,7 +71,6 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
 
                 @Override
                 public Long doInJedis(Jedis jedis) {
-
 
                     List<byte[]> params = new ArrayList<byte[]>();
 
@@ -172,12 +185,8 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
 
         try {
 
-            final Set<byte[]> keys = RedisHelper.execute(jedisPool, new JedisCallback<Set<byte[]>>() {
-                @Override
-                public Set<byte[]> doInJedis(Jedis jedis) {
-                    return jedis.keys((keyPrefix + "*").getBytes());
-                }
-            });
+
+            final List<byte[]> keys = RedisHelper.getAllKeys(jedisPool, keyPrefix);
 
 
             return RedisHelper.execute(jedisPool, new JedisCallback<List<Transaction>>() {
@@ -209,4 +218,6 @@ public class RedisTransactionRepository extends CachableTransactionRepository {
             throw new TransactionIOException(e);
         }
     }
+
+
 }

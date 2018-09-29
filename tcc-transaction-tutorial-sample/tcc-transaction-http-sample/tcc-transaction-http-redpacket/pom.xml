@@ -5,7 +5,7 @@
     <parent>
         <artifactId>tcc-transaction-http-sample</artifactId>
         <groupId>org.mengyun</groupId>
-       <version>1.2.4.15</version>
+       <version>1.2.4.23</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,13 @@
         <dependency>
             <groupId>org.mengyun</groupId>
             <artifactId>tcc-transaction-http-redpacket-api</artifactId>
-           <version>1.2.4.15</version>
+           <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mengyun</groupId>
+            <artifactId>tcc-transaction-sample-redpacket</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
